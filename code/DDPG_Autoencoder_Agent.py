@@ -10,24 +10,35 @@ class Actor_Net(nn.Module):
 
     def __init__(self, state_dim, action_dim):
         super(Actor_Net, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 256)
+        self.encoder = nn.Sequential(
+            nn.Linear(state_dim, 128),
+            nn.Tanh(),
+            nn.Linear(128, 64),
+            nn.Tanh(),
+            nn.Linear(64, 32),
+            nn.Tanh(),
+            nn.Linear(32, 16)
+        )
+        self.decoder = nn.Sequential(
+            nn.Linear(16, 32),
+            nn.Tanh(),
+            nn.Linear(32, 64),
+            nn.Tanh(),
+            nn.Linear(64, 128),
+            nn.Tanh(),
+            nn.Linear(128, 100),
+            nn.Sigmoid()
+        )
+        self.fc1 = nn.Linear(100, 64)
         self.fc1.weight.data.normal_(0, 0.1)
         self.fc1.bias.data.normal_(0.1)
-        self.fc2 = nn.Linear(256, 128)
+        self.fc2 = nn.Linear(64, action_dim)
         self.fc2.weight.data.normal_(0, 0.1)
         self.fc2.bias.data.normal_(0.1)
-        self.fc3 = nn.Linear(128, 64)
-        self.fc3.weight.data.normal_(0, 0.1)
-        self.fc3.bias.data.normal_(0.1)
-        self.fc4 = nn.Linear(64, action_dim)
-        self.fc4.weight.data.normal_(0, 0.1)
-        self.fc4.bias.data.normal_(0.1)
 
     def forward(self, x):
         out = self.fc1(x)
         out = self.fc2(out)
-        out = self.fc3(out)
-        out = self.fc4(out)
         out = torch.tanh(out)
 
         return out
@@ -37,41 +48,22 @@ class Critic_Net(nn.Module):
 
     def __init__(self, state_dim, action_dim):
         super(Critic_Net, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 256)
+        self.fc1 = nn.Linear(state_dim, 64)
         self.fc1.weight.data.normal_(0, 0.1)
         self.fc1.bias.data.normal_(0.1)
-        self.fc2 = nn.Linear(256, 128)
+        self.fc2 = nn.Linear(action_dim, 64)
         self.fc2.weight.data.normal_(0, 0.1)
         self.fc2.bias.data.normal_(0.1)
-        self.fc3 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 1)
         self.fc3.weight.data.normal_(0, 0.1)
         self.fc3.bias.data.normal_(0.1)
 
-        self.fc4 = nn.Linear(action_dim, 256)
-        self.fc4.weight.data.normal_(0, 0.1)
-        self.fc4.bias.data.normal_(0.1)
-        self.fc5 = nn.Linear(256, 128)
-        self.fc5.weight.data.normal_(0, 0.1)
-        self.fc5.bias.data.normal_(0.1)
-        self.fc6 = nn.Linear(128, 64)
-        self.fc6.weight.data.normal_(0, 0.1)
-        self.fc6.bias.data.normal_(0.1)
-
-        self.fc7 = nn.Linear(64, 1)
-        self.fc7.weight.data.normal_(0, 0.1)
-        self.fc7.bias.data.normal_(0.1)
-
     def forward(self, s, a):
         x = self.fc1(s)
-        x = self.fc2(x)
-        x = self.fc3(x)
-
-        y = self.fc4(a)
-        y = self.fc5(y)
-        y = self.fc6(y)
+        y = self.fc2(a)
 
         out = F.relu(x + y)
-        out = self.fc7(out)
+        out = self.fc3(out)
 
         return out
 
